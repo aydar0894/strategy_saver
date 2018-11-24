@@ -16,6 +16,7 @@ class MatrixForm(forms.Form):
     ast = forms.CharField()
     user_id = forms.CharField()
     name = forms.CharField()
+    frontend_graph = forms.CharField()
 
 @csrf_exempt
 def save_strategy(request):
@@ -34,7 +35,7 @@ def save_strategy(request):
             ast  = form.cleaned_data['ast']
             user_id = form.cleaned_data['user_id']
             name = form.cleaned_data['name']
-
-            strategies.update({'user_id': user_id, 'name' : name}, {'$set':  {'ast': ast, 'json_representation': json_representation}}, upsert=True)
+            frontend_graph = form.cleaned_data['frontend_graph']
+            strategies.update({'user_id': user_id, 'name' : name}, {'$set':  {'frontend_graph': frontend_graph, 'ast': ast, 'json_representation': json_representation}}, upsert=True)
 
             return JsonResponse(data, safe=False)
