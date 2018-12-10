@@ -7,8 +7,16 @@ from rest_framework.parsers import JSONParser
 # from PRIPS_workflow import run_workflow
 from .MatrixCalculation import MultiplierCorrelationCalculator, MongoConnector
 import json
+from bson import ObjectId
+
 from pymongo import MongoClient
 
+
+class JSONEncoder(json.JSONEncoder):
+    def default(self, o):
+        if isinstance(o, ObjectId):
+            return str(o)
+        return json.JSONEncoder.default(self, o)
 
 
 class MatrixForm(forms.Form):
@@ -20,6 +28,58 @@ class MatrixForm(forms.Form):
 
 
 @csrf_exempt
+def remove_bot_by_id(request):
+    if request.method == 'GET':
+        client = MongoClient('localhost',
+                        authSource='bitcoin')
+        db = client.bitcoin
+        bot_id = message = request.GET.get('id')
+        strategies = db.strategies
+        result = {}
+        cursor = strategies.delete_one({'_id': ObjectId(bot_id)})
+        i = 0
+        for document in cursor:
+            result.update({str(i): JSONEncoder().encode(document)})
+            i +=1
+        return JsonResponse(result, safe=False)
+    return JsonResponse({"message": "Error"}, safe=False)
+
+@csrf_exempt
+def get_bot_by_id(request):
+    if request.method == 'GET':
+        client = MongoClient('localhost',
+                        authSource='bitcoin')
+        db = client.bitcoin
+        bot_id = message = request.GET.get('id')
+        strategies = db.strategies
+        result = {}
+        cursor = strategies.find({'_id': ObjectId(bot_id)}, {'_id': 1, 'bot_name': 1, 'user_id': 1, 'ast': 1, 'frontend_graph': 1, 'json_representation': 1})
+        i = 0
+        for document in cursor:
+            result.update({str(i): JSONEncoder().encode(document)})
+            i +=1
+        return JsonResponse(result, safe=False)
+    return JsonResponse({"message": "Error"}, safe=False)
+
+
+@csrf_exempt
+def get_user_strategies(request):
+    if request.method == 'GET':
+        client = MongoClient('localhost',
+                        authSource='bitcoin')
+        db = client.bitcoin
+        user_id = message = request.GET.get('user_id')
+        strategies = db.strategies
+        result = {}
+        cursor = strategies.find({'user_id': user_id}, {'_id': 1, 'bot_name': 1, 'user_id': 1, 'ast': 1, 'frontend_graph': 1, 'json_representation': 1})
+        i = 0
+        for document in cursor:
+            result.update({str(i): JSONEncoder().encode(document)})
+            i +=1
+        return JsonResponse(result, safe=False)
+    return JsonResponse({"message": "Error"}, safe=False)
+
+@csrf_exempt
 def strategies_list(request):
     if request.method == 'GET':
         client = MongoClient('localhost',
@@ -27,10 +87,10 @@ def strategies_list(request):
         db = client.bitcoin
         strategies = db.strategies
         result = {}
-        cursor = strategies.find({}, {'_id': 0, 'bot_name': 1, 'user_id': 1, 'ast': 1, 'frontend_graph': 1, 'json_representation': 1})
+        cursor = strategies.find({}, {'_id': 1, 'bot_name': 1, 'user_id': 1, 'ast': 1, 'frontend_graph': 1, 'json_representation': 1})
         i = 0
         for document in cursor:
-            result.update({str(i): document})
+            result.update({str(i): JSONEncoder().encode(document)})
             i +=1
         return JsonResponse(result, safe=False)
     return JsonResponse({"message": "Error"}, safe=False)
