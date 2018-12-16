@@ -22,10 +22,47 @@ class JSONEncoder(json.JSONEncoder):
 class MatrixForm(forms.Form):
     json_representation = forms.CharField()
     ast = forms.CharField()
+    id = forms.CharField()
     user_id = forms.CharField()
     bot_name = forms.CharField()
+    bot_description = forms.CharField()
     frontend_graph = forms.CharField()
 
+
+@csrf_exempt
+def add_error_code(request):
+    if request.method == 'GET':
+        client = MongoClient('localhost',
+                        authSource='bitcoin')
+        db = client.bitcoin
+        code = request.GET.get('code')
+        description = request.GET.get('description')
+
+        error_codes = db.error_codes
+        result = {}
+        cursor = error_codes.update({'code' : code}, {'description': description})
+        i = 0
+        for document in cursor:
+            result.update({str(i): JSONEncoder().encode(document)})
+            i +=1
+        return JsonResponse(result, safe=False)
+    return JsonResponse({"message": "Error"}, safe=False)
+
+@csrf_exempt
+def get_backtester_error_codes(request):
+    if request.method == 'GET':
+        client = MongoClient('localhost',
+                        authSource='bitcoin')
+        db = client.bitcoin
+        error_codes = db.error_codes
+        result = {}
+        cursor = error_codes.find()
+        i = 0
+        for document in cursor:
+            result.update({str(i): JSONEncoder().encode(document)})
+            i +=1
+        return JsonResponse(result, safe=False)
+    return JsonResponse({"message": "Error"}, safe=False)
 
 @csrf_exempt
 def remove_bot_by_id(request):
@@ -53,7 +90,7 @@ def get_bot_by_id(request):
         bot_id = message = request.GET.get('id')
         strategies = db.strategies
         result = {}
-        cursor = strategies.find({'_id': ObjectId(bot_id)}, {'_id': 1, 'bot_name': 1, 'user_id': 1, 'ast': 1, 'frontend_graph': 1, 'json_representation': 1})
+        cursor = strategies.find({'_id': ObjectId(bot_id)}, {'_id': 1, 'bot_description': 1, 'bot_name': 1, 'user_id': 1, 'ast': 1, 'frontend_graph': 1, 'json_representation': 1})
         i = 0
         for document in cursor:
             result.update({str(i): JSONEncoder().encode(document)})
@@ -71,7 +108,7 @@ def get_user_strategies(request):
         user_id = message = request.GET.get('user_id')
         strategies = db.strategies
         result = {}
-        cursor = strategies.find({'user_id': user_id}, {'_id': 1, 'bot_name': 1, 'user_id': 1, 'ast': 1, 'frontend_graph': 1, 'json_representation': 1})
+        cursor = strategies.find({'user_id': user_id}, {'_id': 1,'bot_description':1, 'bot_name': 1, 'user_id': 1, 'ast': 1, 'frontend_graph': 1, 'json_representation': 1})
         i = 0
         for document in cursor:
             result.update({str(i): JSONEncoder().encode(document)})
@@ -87,7 +124,7 @@ def strategies_list(request):
         db = client.bitcoin
         strategies = db.strategies
         result = {}
-        cursor = strategies.find({}, {'_id': 1, 'bot_name': 1, 'user_id': 1, 'ast': 1, 'frontend_graph': 1, 'json_representation': 1})
+        cursor = strategies.find({}, {'_id': 1, 'bot_description': 1, 'bot_name': 1, 'user_id': 1, 'ast': 1, 'frontend_graph': 1, 'json_representation': 1})
         i = 0
         for document in cursor:
             result.update({str(i): JSONEncoder().encode(document)})
@@ -112,8 +149,35 @@ def save_strategy(request):
             ast  = form.cleaned_data['ast']
             user_id = form.cleaned_data['user_id']
             bot_name = form.cleaned_data['bot_name']
+            bot_description = form.cleaned_data['bot_description']
             frontend_graph = form.cleaned_data['frontend_graph']
-            strategies.update({'user_id': user_id, 'bot_name' : bot_name}, {'$set':  {'frontend_graph': frontend_graph, 'ast': ast, 'json_representation': json_representation}}, upsert=True)
 
-            return JsonResponse({"message": "Success"}, safe=False)
+            strategy_id = strategies.insert_one({'user_id': user_id, 'bot_name' : bot_name, 'bot_description': bot_description, 'frontend_graph': frontend_graph, 'ast': ast, 'json_representation': json_representation}).inserted_id
+
+            return JsonResponse({"message": "Success", "id": str(strategy_id)}, safe=False)
+    return JsonResponse({"message": "Error"}, safe=False)
+
+@csrf_exempt
+def update_by_id(request):
+    if request.method == 'POST':
+        form = MatrixForm(request.POST)
+        if form.is_valid():
+            client = MongoClient('localhost',
+                            authSource='bitcoin')
+            db = client.bitcoin
+            bot_id = message = request.GET.get('id')
+            strategies = db.strategies
+            json_representation = form.cleaned_data['json_representation']
+            ast  = form.cleaned_data['ast']
+            user_id = form.cleaned_data['user_id']
+            bot_name = form.cleaned_data['bot_name']
+            bot_description = form.cleaned_data['bot_description']
+            frontend_graph = form.cleaned_data['frontend_graph']
+            bot_id = form.cleaned_data['id']
+
+
+            result = {}
+            document = strategies.find_and_modify({'_id': ObjectId(bot_id)}, {'user_id': user_id, 'bot_name' : bot_name, 'bot_description': bot_description, 'frontend_graph': frontend_graph, 'ast': ast, 'json_representation': json_representation})
+
+            return JsonResponse(JSONEncoder().encode(document), safe=False)
     return JsonResponse({"message": "Error"}, safe=False)
