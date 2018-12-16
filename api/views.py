@@ -40,7 +40,7 @@ def add_error_code(request):
 
         error_codes = db.error_codes
         result = {}
-        cursor = error_codes.update({'code' : code}, {'description': description})
+        cursor = error_codes.update({'code' : code}, {'description': description}, upsert=True)
         i = 0
         for document in cursor:
             result.update({str(i): JSONEncoder().encode(document)})
