@@ -41,8 +41,8 @@ def add_error_code(request):
         error_codes = db.error_codes
         result = {}
         document = error_codes.insert_one({'code' : code, 'description': description})
-        
-        return JsonResponse(JSONEncoder().encode(document), safe=False)
+
+        return JsonResponse({"message": "Success"}, safe=False)
     return JsonResponse({"message": "Error"}, safe=False)
 
 @csrf_exempt
