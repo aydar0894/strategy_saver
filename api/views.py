@@ -40,12 +40,9 @@ def add_error_code(request):
 
         error_codes = db.error_codes
         result = {}
-        cursor = error_codes.update({'code' : code}, {'description': description}, upsert=True)
-        i = 0
-        for document in cursor:
-            result.update({str(i): JSONEncoder().encode(document)})
-            i +=1
-        return JsonResponse(result, safe=False)
+        document = error_codes.insert_one({'code' : code, 'description': description})
+        
+        return JsonResponse(JSONEncoder().encode(document), safe=False)
     return JsonResponse({"message": "Error"}, safe=False)
 
 @csrf_exempt
