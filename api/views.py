@@ -61,6 +61,8 @@ def get_backtester_error_codes(request):
         return JsonResponse(result, safe=False)
     return JsonResponse({"message": "Error"}, safe=False)
 
+# Strategies ----------------------------------------------------------------
+
 @csrf_exempt
 def remove_bot_by_id(request):
     if request.method == 'GET':
@@ -234,6 +236,117 @@ def update_by_id(request):
 
             result = {}
             document = strategies.find_and_modify({'_id': ObjectId(bot_id)}, {'published': 'False', 'user_id': user_id, 'bot_name' : bot_name, 'bot_description': bot_description, 'frontend_graph': frontend_graph, 'ast': ast, 'json_representation': json_representation})
+
+            return JsonResponse(JSONEncoder().encode(document), safe=False)
+    return JsonResponse({"message": "Error"}, safe=False)
+
+
+# User Layouts ----------------------------------------------------------------
+
+class LayoutsForm(forms.Form):
+    json_representation = forms.CharField()
+    email = forms.CharField()
+    title = forms.CharField()
+    description = forms.CharField()
+
+
+@csrf_exempt
+def remove_layout_by_id(request):
+    if request.method == 'GET':
+        client = MongoClient('localhost',
+                        authSource='bitcoin')
+        db = client.bitcoin
+        layout_id = message = request.GET.get('id')
+        user_layouts = db.user_layouts
+        result = {}
+        cursor = user_layouts.delete_one({'_id': ObjectId(layout_id)})
+        i = 0
+        for document in cursor:
+            result.update({str(i): JSONEncoder().encode(document)})
+            i +=1
+        return JsonResponse(result, safe=False)
+    return JsonResponse({"message": "Error"}, safe=False)
+
+@csrf_exempt
+def get_layout_by_id(request):
+    if request.method == 'GET':
+        client = MongoClient('localhost',
+                        authSource='bitcoin')
+        db = client.bitcoin
+        layout_id = message = request.GET.get('id')
+        user_layouts = db.user_layouts
+        result = {}
+        cursor = user_layouts.find({'_id': ObjectId(layout_id)})
+        i = 0
+        for document in cursor:
+            result.update({str(i): JSONEncoder().encode(document)})
+            i +=1
+        return JsonResponse(result, safe=False)
+    return JsonResponse({"message": "Error"}, safe=False)
+
+
+@csrf_exempt
+def get_user_layouts(request):
+    if request.method == 'GET':
+        client = MongoClient('localhost',
+                        authSource='bitcoin')
+        db = client.bitcoin
+        email = message = request.GET.get('email')
+        user_layouts = db.user_layouts
+        result = {}
+        cursor = user_layouts.find({'email': email})
+        i = 0
+        for document in cursor:
+            result.update({str(i): JSONEncoder().encode(document)})
+            i +=1
+        return JsonResponse(result, safe=False)
+    return JsonResponse({"message": "Error"}, safe=False)
+
+
+
+@csrf_exempt
+def save_layout(request):
+
+    if request.method == 'POST':
+        form = LayoutsForm(request.POST)
+        print(form)
+        if form.is_valid():
+            client = MongoClient('localhost',
+                            authSource='bitcoin')
+
+            db = client.bitcoin
+            user_layouts = db.user_layouts
+
+            json_representation = form.cleaned_data['json_representation']
+            email = form.cleaned_data['email']
+            title = form.cleaned_data['title']
+            description = form.cleaned_data['description']
+
+            user_layout_id = user_layouts.insert_one({'email': email, 'title' : title, 'description': description, 'json_representation': json_representation}).inserted_id
+
+            return JsonResponse({"message": "Success", "id": str(user_layout_id)}, safe=False)
+    return JsonResponse({"message": "Error"}, safe=False)
+
+
+@csrf_exempt
+def update_layout_by_id(request):
+    if request.method == 'POST':
+        form = MatrixForm(request.POST)
+        if form.is_valid():
+            client = MongoClient('localhost',
+                            authSource='bitcoin')
+            db = client.bitcoin
+            user_layouts = db.user_layouts
+
+            json_representation = form.cleaned_data['json_representation']
+            email = form.cleaned_data['email']
+            title = form.cleaned_data['title']
+            description = form.cleaned_data['description']
+            id = form.cleaned_data['id']
+
+
+            result = {}
+            document = strategies.find_and_modify({'_id': ObjectId(id)}, {'email': email, 'title' : title, 'description': description, 'json_representation': json_representation})
 
             return JsonResponse(JSONEncoder().encode(document), safe=False)
     return JsonResponse({"message": "Error"}, safe=False)

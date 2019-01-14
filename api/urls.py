@@ -12,6 +12,11 @@ urlpatterns = [
     url(r'^update_by_id$', views.update_by_id),
     url(r'^published_strategies_list$', views.published_strategies_list),
     url(r'^publish_strategy$', views.publish_strategy),
-    url(r'^get_user_published_strategies$', views.get_user_published_strategies)
+    url(r'^get_user_published_strategies$', views.get_user_published_strategies),
+    url(r'^remove_layout_by_id$', views.remove_layout_by_id),
+    url(r'^get_layout_by_id$', views.get_layout_by_id),
+    url(r'^get_user_layouts$', views.get_user_layouts),
+    url(r'^save_layout$', views.save_layout),
+    url(r'^update_layout_by_id$', views.update_layout_by_id)   
 
 ]
